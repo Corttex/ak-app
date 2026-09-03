@@ -1,13 +1,18 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
+import { cookies } from 'next/headers';
 
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const phone = searchParams.get('phone') || "61994344843";
+    const cookieStore = await cookies();
+    const token = cookieStore.get('supporter_token');
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const supporter = await prisma.supporter.findUnique({
-      where: { phone },
+      where: { id: token.value },
       include: {
         referrals: {
           select: {
@@ -25,22 +30,12 @@ export async function GET(req: Request) {
     });
 
     if (!supporter) {
-      // Mock data response for smooth preview if not seeded yet
-      return NextResponse.json({
-        success: true,
-        inviteSlug: "andre-kubitschek-77",
-        totalReferrals: 14,
-        referrals: [
-          { id: "1", fullName: "Marcos Vinicius", city: "Taguatinga", tier: "LEAO_BEBE", totalPoints: 150, createdAt: "2026-08-20T10:00:00Z" },
-          { id: "2", fullName: "Fernanda Lima", city: "Ceilândia", tier: "LEAO_JOVEM", totalPoints: 320, createdAt: "2026-08-22T14:30:00Z" },
-          { id: "3", fullName: "Roberto Silva", city: "Águas Claras", tier: "LEAO_BEBE", totalPoints: 100, createdAt: "2026-08-25T09:15:00Z" }
-        ]
-      });
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
     return NextResponse.json({
       success: true,
-      inviteSlug: supporter.inviteSlug,
+      inviteSlug: supporter.inviteSlug || 'ak-22022',
       totalReferrals: supporter.referrals.length,
       referrals: supporter.referrals
     });

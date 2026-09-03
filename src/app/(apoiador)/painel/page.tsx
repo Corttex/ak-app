@@ -6,6 +6,10 @@ export default function DashboardApoiador() {
   const router = useRouter();
   const [userData, setUserData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showQR, setShowQR] = useState(false);
+  const [showProposalModal, setShowProposalModal] = useState<string | null>(null);
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+  const [suggestionText, setSuggestionText] = useState('');
 
   useEffect(() => {
     const userPhone = localStorage.getItem('user_phone');
@@ -28,21 +32,33 @@ export default function DashboardApoiador() {
     return <div className="min-h-screen bg-[#020617] flex items-center justify-center text-white">Carregando painel...</div>;
   }
 
-  const nome = userData?.fullName || "Sem Nome";
-  const slug = userData?.inviteSlug || "convite";
+  const nome = userData?.fullName || "";
+  const firstName = nome ? nome.split(' ')[0] : "";
+  const isProfileIncomplete = !nome || nome.toLowerCase() === "sem nome";
+  const slug = userData?.inviteSlug || "ak-22022";
   const points = userData?.totalPoints || 0;
   
   // Gamification logic
-  let level = "Bebê Leão";
-  let nextLevel = "Filhote";
+  let level = "Apoiador Iniciante";
+  let nextLevel = "Multiplicador";
   let nextPoints = 100;
   let progress = (points / nextPoints) * 100;
   if (progress > 100) progress = 100;
-  if (points >= 100) {
-    level = "Filhote";
-    nextLevel = "Jovem Leão";
+  if (points >= 100 && points < 500) {
+    level = "Multiplicador";
+    nextLevel = "Coordenador de Rede";
     nextPoints = 500;
     progress = ((points - 100) / 400) * 100;
+  } else if (points >= 500 && points < 1000) {
+    level = "Coordenador de Rede";
+    nextLevel = "Embaixador AK";
+    nextPoints = 1000;
+    progress = ((points - 500) / 500) * 100;
+  } else if (points >= 1000) {
+    level = "Embaixador AK";
+    nextLevel = "Lenda";
+    nextPoints = points;
+    progress = 100;
   }
 
   const inviteUrl = `https://ak.app.br/convite/${slug}`;
@@ -61,20 +77,24 @@ export default function DashboardApoiador() {
           />
         </div>
         <div className="flex flex-col items-center sm:items-start text-center sm:text-left flex-1 z-10">
-          <h2 className="text-headline-lg font-headline font-bold text-on-surface mb-1">Olá, {nome.split(' ')[0]}!</h2>
+          <h2 className="text-headline-lg font-headline font-bold text-on-surface mb-1">{firstName ? `Olá, ${firstName}!` : 'Olá!'}</h2>
           <p className="text-body-lg font-body text-primary font-bold mb-3 flex items-center justify-center sm:justify-start gap-1">
             Seja bem-vindo(a) à equipe de André Kubitschek!
           </p>
+          {isProfileIncomplete && (
+            <div className="bg-[#fff8e1] border border-[#ffc800] rounded-xl p-4 mb-4 flex flex-col sm:flex-row items-center gap-3">
+              <span className="material-symbols-outlined text-[#ffc800] text-2xl">account_circle</span>
+              <p className="text-sm text-gray-800 font-medium text-left">
+                Complete o seu cadastro em <a href="/perfil" className="font-black text-[#d19c00] underline">Editar Perfil</a>. Ao completar ele, você já ganha 50 pontos.
+              </p>
+            </div>
+          )}
           <div className="flex flex-wrap justify-center sm:justify-start gap-2 mb-4">
             <span className="bg-surface-dim text-on-surface-variant text-xs font-bold px-3 py-1 rounded-full border border-outline-variant">Ex-Secretário da Juventude</span>
             <span className="bg-surface-dim text-on-surface-variant text-xs font-bold px-3 py-1 rounded-full border border-outline-variant">Cristão</span>
             <span className="bg-surface-dim text-on-surface-variant text-xs font-bold px-3 py-1 rounded-full border border-outline-variant">Empresário</span>
             <span className="bg-surface-dim text-on-surface-variant text-xs font-bold px-3 py-1 rounded-full border border-outline-variant">Advogado</span>
           </div>
-          <a href="https://www.instagram.com/andrekubitschek/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:scale-105 transition-transform">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-            @andrekubitschek
-          </a>
         </div>
       </div>
 
@@ -83,20 +103,26 @@ export default function DashboardApoiador() {
         <div className="absolute top-0 left-0 w-full h-1.5 bg-secondary"></div>
         <div className="flex items-center gap-5 relative z-10 mt-2">
           <div className="w-20 h-20 bg-secondary-container rounded-full border-4 border-secondary flex items-center justify-center relative shadow-md">
-            <span className="material-symbols-outlined text-on-secondary-container text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>pets</span>
+            <span className="material-symbols-outlined text-on-secondary-container text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>handshake</span>
           </div>
           <div className="flex-1">
             <div className="flex justify-between items-end mb-2">
               <h3 className="text-headline-lg font-headline font-bold text-on-surface">Nível {points >= 100 ? '2' : '1'} <span className="text-primary font-normal text-headline-md ml-1">• {level}</span></h3>
-              <span className="material-symbols-outlined text-primary text-3xl">chevron_right</span>
             </div>
             <div className="flex justify-between text-body-lg font-body text-on-surface-variant mb-3 font-medium">
               <span>Próximo nível: {nextLevel}</span>
               <span className="text-primary font-bold">{points}/{nextPoints}</span>
             </div>
-            <div className="w-full bg-surface-container-high rounded-full h-3 overflow-hidden shadow-inner">
+            <div className="w-full bg-surface-container-high rounded-full h-3 overflow-hidden shadow-inner mb-3">
               <div className="bg-primary h-full rounded-full transition-all duration-1000" style={{ width: `${progress}%` }}></div>
             </div>
+            
+            {/* Link to Badges Gallery */}
+            <a href="/conquistas" className="inline-flex items-center gap-1.5 text-secondary hover:text-primary transition-colors font-bold text-sm">
+              <span className="material-symbols-outlined text-lg">emoji_events</span>
+              Ver Sala de Troféus
+              <span className="material-symbols-outlined text-sm ml-auto">arrow_forward</span>
+            </a>
           </div>
         </div>
       </section>
@@ -124,7 +150,10 @@ export default function DashboardApoiador() {
             <span className="material-symbols-outlined text-2xl">content_copy</span>
             <span>Copiar Link</span>
           </button>
-          <button className="flex-1 bg-white hover:bg-surface-dim text-primary py-3 px-6 rounded-xl flex items-center justify-center gap-3 transition-colors font-bold shadow-md">
+          <button 
+            onClick={() => setShowQR(true)}
+            className="flex-1 bg-white hover:bg-surface-dim text-primary py-3 px-6 rounded-xl flex items-center justify-center gap-3 transition-colors font-bold shadow-md"
+          >
             <span className="material-symbols-outlined text-2xl">qr_code_2</span>
             <span>QR Code</span>
           </button>
@@ -155,18 +184,76 @@ export default function DashboardApoiador() {
           <span className="text-primary font-label-bold font-bold bg-primary-container px-4 py-2 rounded-full">Entrar</span>
         </a>
 
-        {/* Radio */}
-        <a className="bg-surface rounded-2xl p-6 border border-outline-variant flex items-center justify-between hover:shadow-md transition-shadow group" href="https://youtube.com/andrekubitschek" target="_blank">
+        {/* Media (Videos / Jingle) */}
+        <a className="bg-surface rounded-2xl p-6 border border-outline-variant flex items-center justify-between hover:shadow-md transition-shadow group" href="https://www.youtube.com/channel/UCeOj9Vns3WuR9rQ2xcD3aSQ" target="_blank">
           <div className="flex items-center gap-5">
-            <img alt="Capa rádio" className="w-14 h-14 rounded-2xl object-cover shadow-md group-hover:scale-105 transition-transform" src="https://ui-avatars.com/api/?name=Radio+AK&background=0047BB&color=fff" />
+            <div className="w-14 h-14 bg-[#FF0000] rounded-2xl flex items-center justify-center text-white shadow-md shadow-[#FF0000]/30 group-hover:scale-105 transition-transform">
+              <span className="material-symbols-outlined text-3xl">play_circle</span>
+            </div>
             <div>
-              <h4 className="text-headline-md font-headline font-bold text-on-surface">Rádio do Candidato</h4>
-              <p className="text-body-md font-body text-on-surface-variant font-medium mt-1">André Kubitschek</p>
+              <h4 className="text-headline-md font-headline font-bold text-on-surface">Vídeos da Campanha</h4>
+              <p className="text-body-md font-body text-on-surface-variant font-medium mt-1">YouTube Oficial</p>
             </div>
           </div>
           <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-on-primary shadow-md shadow-primary/30">
             <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
           </div>
+        </a>
+
+        {/* Instagram */}
+        <a className="bg-surface rounded-2xl p-6 border border-outline-variant flex items-center justify-between hover:shadow-md transition-shadow group" href="https://www.instagram.com/andrekubitschek" target="_blank">
+          <div className="flex items-center gap-5">
+            <div className="w-14 h-14 bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 rounded-2xl flex items-center justify-center text-white shadow-md shadow-purple-500/30 group-hover:scale-105 transition-transform">
+              <span className="text-2xl font-bold font-serif">ig</span>
+            </div>
+            <div>
+              <h4 className="text-headline-md font-headline font-bold text-on-surface">Instagram</h4>
+              <p className="text-body-md font-body text-on-surface-variant font-medium mt-1">@andrekubitschek</p>
+            </div>
+          </div>
+          <span className="material-symbols-outlined text-primary">open_in_new</span>
+        </a>
+
+        {/* Facebook */}
+        <a className="bg-surface rounded-2xl p-6 border border-outline-variant flex items-center justify-between hover:shadow-md transition-shadow group" href="https://www.facebook.com/AndreOctavioKubitschek" target="_blank">
+          <div className="flex items-center gap-5">
+            <div className="w-14 h-14 bg-[#1877F2] rounded-2xl flex items-center justify-center text-white shadow-md shadow-[#1877F2]/30 group-hover:scale-105 transition-transform">
+              <span className="text-2xl font-bold font-serif">fb</span>
+            </div>
+            <div>
+              <h4 className="text-headline-md font-headline font-bold text-on-surface">Facebook</h4>
+              <p className="text-body-md font-body text-on-surface-variant font-medium mt-1">Página Oficial</p>
+            </div>
+          </div>
+          <span className="material-symbols-outlined text-primary">open_in_new</span>
+        </a>
+
+        {/* TikTok */}
+        <a className="bg-surface rounded-2xl p-6 border border-outline-variant flex items-center justify-between hover:shadow-md transition-shadow group" href="https://www.tiktok.com/@andrekubitschek" target="_blank">
+          <div className="flex items-center gap-5">
+            <div className="w-14 h-14 bg-black rounded-2xl flex items-center justify-center text-white shadow-md shadow-black/30 group-hover:scale-105 transition-transform">
+              <span className="text-2xl font-bold font-sans">tk</span>
+            </div>
+            <div>
+              <h4 className="text-headline-md font-headline font-bold text-on-surface">TikTok</h4>
+              <p className="text-body-md font-body text-on-surface-variant font-medium mt-1">@andrekubitschek</p>
+            </div>
+          </div>
+          <span className="material-symbols-outlined text-primary">open_in_new</span>
+        </a>
+
+        {/* X (Twitter) */}
+        <a className="bg-surface rounded-2xl p-6 border border-outline-variant flex items-center justify-between hover:shadow-md transition-shadow group" href="https://x.com/andrekubitschek" target="_blank">
+          <div className="flex items-center gap-5">
+            <div className="w-14 h-14 bg-black rounded-2xl flex items-center justify-center text-white shadow-md shadow-black/30 group-hover:scale-105 transition-transform">
+              <span className="text-2xl font-bold font-sans">X</span>
+            </div>
+            <div>
+              <h4 className="text-headline-md font-headline font-bold text-on-surface">X (Twitter)</h4>
+              <p className="text-body-md font-body text-on-surface-variant font-medium mt-1">@andrekubitschek</p>
+            </div>
+          </div>
+          <span className="material-symbols-outlined text-primary">open_in_new</span>
         </a>
       </div>
 
@@ -182,26 +269,139 @@ export default function DashboardApoiador() {
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <button className="bg-surface-container hover:bg-primary hover:text-white border border-outline-variant hover:border-primary rounded-2xl p-6 text-center transition-all shadow-sm group">
-            <span className="text-body-lg font-body font-bold text-on-surface group-hover:text-white">Saúde</span>
+          <button onClick={() => setShowProposalModal('1º Emprego')} className="bg-surface-container hover:bg-primary hover:text-white border border-outline-variant hover:border-primary rounded-2xl p-6 text-center transition-all shadow-sm group">
+            <span className="text-body-lg font-body font-bold text-on-surface group-hover:text-white">1º Emprego</span>
           </button>
-          <button className="bg-surface-container hover:bg-primary hover:text-white border border-outline-variant hover:border-primary rounded-2xl p-6 text-center transition-all shadow-sm group">
-            <span className="text-body-lg font-body font-bold text-on-surface group-hover:text-white">Economia</span>
+          <button onClick={() => setShowProposalModal('Qualificação')} className="bg-surface-container hover:bg-primary hover:text-white border border-outline-variant hover:border-primary rounded-2xl p-6 text-center transition-all shadow-sm group">
+            <span className="text-body-lg font-body font-bold text-on-surface group-hover:text-white">Qualificação</span>
           </button>
-          <button className="bg-surface-container hover:bg-primary hover:text-white border border-outline-variant hover:border-primary rounded-2xl p-6 text-center transition-all shadow-sm group">
+          <button onClick={() => setShowProposalModal('Empreendedorismo')} className="bg-surface-container hover:bg-primary hover:text-white border border-outline-variant hover:border-primary rounded-2xl p-6 text-center transition-all shadow-sm group">
+            <span className="text-body-lg font-body font-bold text-on-surface group-hover:text-white">Empreendedorismo</span>
+          </button>
+          <button onClick={() => setShowProposalModal('Inovação e Tecnologia')} className="bg-surface-container hover:bg-primary hover:text-white border border-outline-variant hover:border-primary rounded-2xl p-6 text-center transition-all shadow-sm group">
+            <span className="text-body-lg font-body font-bold text-on-surface group-hover:text-white">Inovação e Tecnologia</span>
+          </button>
+          <button onClick={() => setShowProposalModal('Mobilidade')} className="bg-surface-container hover:bg-primary hover:text-white border border-outline-variant hover:border-primary rounded-2xl p-6 text-center transition-all shadow-sm group">
+            <span className="text-body-lg font-body font-bold text-on-surface group-hover:text-white">Mobilidade</span>
+          </button>
+          <button onClick={() => setShowProposalModal('Segurança')} className="bg-surface-container hover:bg-primary hover:text-white border border-outline-variant hover:border-primary rounded-2xl p-6 text-center transition-all shadow-sm group">
             <span className="text-body-lg font-body font-bold text-on-surface group-hover:text-white">Segurança</span>
           </button>
-          <button className="bg-surface-container hover:bg-primary hover:text-white border border-outline-variant hover:border-primary rounded-2xl p-6 text-center transition-all shadow-sm group">
-            <span className="text-body-lg font-body font-bold text-on-surface group-hover:text-white">Educação</span>
-          </button>
-          <button className="bg-surface-container hover:bg-primary hover:text-white border border-outline-variant hover:border-primary rounded-2xl p-6 text-center transition-all shadow-sm group">
-            <span className="text-body-lg font-body font-bold text-on-surface group-hover:text-white">Transporte</span>
-          </button>
-          <button className="bg-surface-container hover:bg-primary hover:text-white border border-outline-variant hover:border-primary rounded-2xl p-6 text-center transition-all shadow-sm group">
-            <span className="text-body-lg font-body font-bold text-on-surface group-hover:text-white">Emprego</span>
+        </div>
+        
+        <div className="mt-8 bg-primary-container p-6 rounded-2xl flex flex-col sm:flex-row items-center gap-6">
+          <div className="flex-1">
+            <h4 className="text-2xl font-black text-on-primary-container mb-2">Que DF você quer ajudar a construir?</h4>
+            <p className="text-on-surface-variant font-medium mb-4">
+              Quero conhecer os desafios da sua região e ouvir suas ideias para melhorar Brasília. Conte o que precisa mudar no seu bairro ou região administrativa. Sua contribuição ajudará na construção de propostas mais próximas da realidade da população.
+            </p>
+          </div>
+          <button 
+            onClick={() => setShowSuggestionModal(true)}
+            className="w-full sm:w-auto bg-[#25D366] text-white font-bold py-4 px-6 rounded-xl hover:bg-[#1EBE5D] transition-colors shadow-md flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-2xl">chat</span>
+            Enviar minha proposta
           </button>
         </div>
       </section>
+
+      {/* Proposal Details Popup */}
+      {showProposalModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-surface p-8 rounded-3xl max-w-lg w-full flex flex-col shadow-2xl relative">
+            <button 
+              onClick={() => setShowProposalModal(null)} 
+              className="absolute top-4 right-4 text-on-surface-variant hover:text-error transition-colors"
+            >
+              <span className="material-symbols-outlined text-3xl">close</span>
+            </button>
+            <div className="w-16 h-16 bg-primary-container rounded-full flex items-center justify-center text-primary mb-4">
+              <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>campaign</span>
+            </div>
+            <h3 className="text-3xl font-headline font-black text-on-surface mb-4">{showProposalModal}</h3>
+            <p className="text-body-lg text-on-surface-variant font-medium leading-relaxed mb-6">
+              Esta é a proposta para {showProposalModal}. Nosso compromisso é atuar fortemente nesta área, garantindo recursos, inovação e execução rápida para gerar os melhores resultados para toda a população do Distrito Federal.
+              <br /><br />
+              Continuaremos trabalhando para que o legado de realizações cresça ainda mais.
+            </p>
+            <button 
+              onClick={() => setShowProposalModal(null)}
+              className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-[#0042aa] transition-colors"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Suggestion Form Popup */}
+      {showSuggestionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-surface p-8 rounded-3xl max-w-lg w-full flex flex-col shadow-2xl relative">
+            <button 
+              onClick={() => setShowSuggestionModal(false)} 
+              className="absolute top-4 right-4 text-on-surface-variant hover:text-error transition-colors"
+            >
+              <span className="material-symbols-outlined text-3xl">close</span>
+            </button>
+            <h3 className="text-2xl font-headline font-black text-on-surface mb-2">Sua Ideia para o DF</h3>
+            <p className="text-on-surface-variant mb-4 font-medium">Escreva abaixo sua proposta. Ela será enviada diretamente para a nossa equipe via WhatsApp.</p>
+            
+            <textarea 
+              value={suggestionText}
+              onChange={(e) => setSuggestionText(e.target.value)}
+              placeholder="Ex: No meu bairro precisamos de..."
+              className="w-full bg-surface-container border border-outline-variant rounded-xl p-4 min-h-[120px] text-on-surface focus:outline-none focus:border-primary resize-none mb-4"
+            ></textarea>
+            
+            <a 
+              href={`https://wa.me/5561999531555?text=${encodeURIComponent(`Olá, vim pelo site. Gostaria de enviar uma proposta para o André Kubitschek:\n\n${suggestionText}`)}`}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setShowSuggestionModal(false)}
+              className="w-full bg-[#25D366] text-white font-bold py-3 rounded-xl hover:bg-[#1EBE5D] transition-colors flex items-center justify-center gap-2"
+            >
+              <span className="material-symbols-outlined">send</span>
+              Enviar Ideia
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Popup */}
+      {showQR && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-surface p-8 rounded-3xl max-w-sm w-full flex flex-col items-center gap-6 shadow-2xl relative">
+            <button 
+              onClick={() => setShowQR(false)} 
+              className="absolute top-4 right-4 text-on-surface-variant hover:text-error transition-colors"
+            >
+              <span className="material-symbols-outlined text-3xl">close</span>
+            </button>
+            <h3 className="text-2xl font-headline font-black text-on-surface text-center">Seu Convite</h3>
+            <div className="bg-white p-4 rounded-2xl shadow-inner border border-outline-variant">
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(inviteUrl)}`} 
+                alt="QR Code Convite" 
+                className="w-48 h-48"
+              />
+            </div>
+            <p className="text-body-md text-on-surface-variant text-center font-medium">
+              Peça para seu amigo escanear este código com a câmera do celular.
+            </p>
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(inviteUrl);
+                alert('Link copiado!');
+              }}
+              className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-[#0042aa] transition-colors"
+            >
+              Copiar Link
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

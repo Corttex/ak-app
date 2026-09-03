@@ -15,11 +15,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Telefone inválido' }, { status: 400 });
     }
 
-    // Master Access Bypass (Desenvolvimento / Administrador)
-    if (sanitizedPhone === '61994344843' || sanitizedPhone === '61999998888') {
-      return NextResponse.json({ success: true, message: 'Acesso liberado' });
-    }
-
     // Verificar se o Apoiador já existe no Banco de Dados
     const supporter = await prisma.supporter.findUnique({
       where: { phone: sanitizedPhone }
@@ -34,8 +29,11 @@ export async function POST(req: NextRequest) {
       if (webhookLog) foundInWebhook = true;
     }
 
+    // Master Access Bypass (Desenvolvimento / Administrador)
+    const isMasterBypass = (sanitizedPhone === '61994344843' || sanitizedPhone === '61999998888' || sanitizedPhone === '61999999999');
+
     // Se não encontrou em nenhum local, retorna notFound: true (Exibe aviso de link de convite)
-    if (!supporter && !foundInWebhook) {
+    if (!supporter && !foundInWebhook && !isMasterBypass) {
       return NextResponse.json({
         notFound: true,
         message: 'Não encontramos esse número. Peça o link de convite para quem te chamou.'

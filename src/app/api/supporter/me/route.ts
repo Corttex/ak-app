@@ -1,69 +1,60 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
-// BUSCAR DADOS DO APOIADOR (GET)
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const phone = searchParams.get('phone');
+    const cookieStore = await cookies();
+    const token = cookieStore.get('supporter_token');
 
-    if (!phone) {
-      return NextResponse.json({ error: 'Telefone não informado' }, { status: 400 });
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized', success: false }, { status: 401 });
     }
 
     const supporter = await prisma.supporter.findUnique({
-      where: { phone },
+      where: { id: token.value },
       include: {
         referrals: true
       }
     });
 
     if (!supporter) {
-      return NextResponse.json({ user: null });
+      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ user: supporter });
+    return NextResponse.json({ success: true, supporter, user: supporter });
   } catch (error: any) {
     return NextResponse.json({ error: 'Erro ao buscar dados do perfil', details: error.message }, { status: 500 });
   }
 }
 
-// SALVAR/ATUALIZAR DADOS DO PERFIL (POST)
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { phone, nome, email, instagram, cidade, showInLeaderboard, cpf } = body;
+    const cookieStore = await cookies();
+    const token = cookieStore.get('supporter_token');
 
-    if (!phone) {
-      return NextResponse.json({ error: 'Telefone é obrigatório' }, { status: 400 });
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized', success: false }, { status: 401 });
     }
 
-    // Upsert do perfil
-    const updatedUser = await prisma.supporter.upsert({
-      where: { phone },
-      update: {
+    const body = await req.json();
+    const { nome, email, instagram, cidade, showInLeaderboard, avatarUrl } = body;
+
+    const updatedUser = await prisma.supporter.update({
+      where: { id: token.value },
+      data: {
         fullName: nome,
         email,
         instagram,
         city: cidade,
-        showInLeaderboard
-      },
-      create: {
-        tenantId: 'default-tenant-id',
-        phone,
-        cpf: cpf || '00000000000',
-        fullName: nome || 'Apoiador',
-        email,
-        instagram,
-        city: cidade,
-        showInLeaderboard: showInLeaderboard ?? true,
-        inviteSlug: `${(nome || 'apoiador').toLowerCase().replace(/\s+/g, '-')}-${Math.floor(1000 + Math.random() * 9000)}`
+        showInLeaderboard,
+        ...(avatarUrl ? { avatarUrl } : {})
       }
     });
 
-    return NextResponse.json({ success: true, user: updatedUser });
+    return NextResponse.json({ success: true, user: updatedUser, supporter: updatedUser });
   } catch (error: any) {
     console.error('Erro ao salvar perfil:', error);
     return NextResponse.json({ error: 'Erro interno ao salvar perfil' }, { status: 500 });

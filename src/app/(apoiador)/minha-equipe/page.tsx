@@ -18,8 +18,7 @@ export default function MinhaEquipePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const userPhone = localStorage.getItem('user_phone') || '61994344843';
-    fetch(`/api/supporter/equipe?phone=${userPhone}`)
+    fetch(`/api/supporter/equipe`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -45,7 +44,7 @@ export default function MinhaEquipePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#040d21] text-white font-sans pb-32 pt-6 px-4 max-w-xl mx-auto">
+    <div className="pb-28 pt-8 px-6 max-w-5xl mx-auto w-full flex flex-col gap-6">
       
       {/* Top Header */}
       <div className="flex items-center justify-between mb-6">

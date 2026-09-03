@@ -11,69 +11,64 @@ export default function ApoiadorLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isMaster, setIsMaster] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const validated = localStorage.getItem('whatsapp_validado');
-    if (!validated) {
-      router.push('/validar-whatsapp');
-    } else {
-      setIsAuthenticated(true);
-      if (localStorage.getItem('master_access') === 'true') {
-        setIsMaster(true);
-      }
-    }
+    fetch('/api/supporter/me')
+      .then(res => res.json())
+      .then(data => {
+        if (!data.success) {
+          router.push('/validar-whatsapp');
+        } else {
+          setUser(data.supporter);
+          setIsAuthenticated(true);
+        }
+      })
+      .catch(() => router.push('/validar-whatsapp'));
   }, [router]);
 
   if (!isAuthenticated) {
     return null;
   }
 
+  const userInitial = user?.fullName?.charAt(0) || 'U';
+  const avatarUrl = user?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || 'User')}&background=0047BB&color=fff`;
+
   return (
     <>
       {/* TopAppBar (Mobile) */}
       <header className="md:hidden sticky bg-[#040d21] top-0 z-40 w-full px-5 py-4 flex justify-between items-center border-b border-white/10 shadow-md text-white">
         <Link href="/perfil" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-white/10 border-2 border-[#ffc800] overflow-hidden flex-shrink-0 relative shadow-sm">
+          <div className="w-10 h-10 rounded-full bg-white/10 border-2 border-[#ffc800] overflow-hidden flex-shrink-0 relative shadow-sm flex items-center justify-center font-bold text-lg">
             <img
               alt="Foto de perfil"
               className="w-full h-full object-cover"
-              src="/candidato.jpg"
-              onError={(e) => { e.currentTarget.src = "https://ui-avatars.com/api/?name=Bruno+M&background=0047BB&color=fff"; }}
+              src={avatarUrl}
             />
           </div>
           <div>
-            <h1 className="text-sm font-black text-white leading-tight">Olá, BRUNO!</h1>
-            <p className="text-[11px] text-gray-400 font-medium">Bebê Leão • Nível 1</p>
+            <h1 className="text-sm font-black text-white leading-tight uppercase">Olá, {user?.fullName?.split(' ')[0] || 'Apoiador'}!</h1>
+            <p className="text-[11px] text-gray-400 font-medium">{user?.tier || 'Apoiador Iniciante'}</p>
           </div>
         </Link>
 
-        <div className="flex items-center gap-2">
-          {isMaster && (
-            <button onClick={() => router.push('/admin')} className="p-2 rounded-full bg-[#ffc800]/20 text-[#ffc800] border border-[#ffc800]/30" title="Painel Admin">
-              <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
-            </button>
-          )}
-
-          <button onClick={() => { localStorage.removeItem('whatsapp_validado'); localStorage.removeItem('master_access'); window.location.href = '/validar-whatsapp'; }} className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-gray-300">
+          <button onClick={() => { document.cookie = 'supporter_token=; Max-Age=0; path=/;'; window.location.href = '/validar-whatsapp'; }} className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-gray-300">
             <span className="material-symbols-outlined text-sm">logout</span>
           </button>
-        </div>
       </header>
 
       {/* SideNavBar (Desktop) */}
       <nav className="hidden md:flex flex-col h-full w-72 fixed left-0 top-0 z-50 bg-[#040d21] border-r border-white/10 shadow-lg py-8 text-white">
         <div className="px-6 mb-8 flex flex-col items-center text-center">
-          <div className="w-20 h-20 rounded-full border-4 border-[#ffc800] overflow-hidden mb-3 relative shadow-md">
+          <div className="w-20 h-20 rounded-full bg-white/10 border-4 border-[#ffc800] overflow-hidden mb-3 relative shadow-md flex items-center justify-center font-bold text-3xl">
             <img
               alt="Avatar do usuário"
               className="w-full h-full object-cover"
-              src="/candidato.jpg"
-              onError={(e) => { e.currentTarget.src = "https://ui-avatars.com/api/?name=Bruno+M&background=0047BB&color=fff"; }}
+              src={avatarUrl}
             />
           </div>
-          <h2 className="text-lg font-black text-white">Bruno Machado</h2>
-          <p className="text-xs text-[#ffc800] font-bold mt-0.5">Bebê Leão • Nível 1</p>
+          <h2 className="text-lg font-black text-white">{user?.fullName || 'Sem Nome'}</h2>
+          <p className="text-xs text-[#ffc800] font-bold mt-0.5">{user?.tier || 'Apoiador Iniciante'}</p>
           <Link href="/perfil" className="mt-4 text-xs font-black bg-[#ffc800] text-[#040d21] px-5 py-2 rounded-full hover:bg-[#e6b400] transition-colors shadow-sm">
             Editar Perfil
           </Link>
@@ -91,12 +86,30 @@ export default function ApoiadorLayout({
           </Link>
           <Link
             className={`px-4 py-3 rounded-2xl flex items-center gap-3 transition-all ${
+              pathname === '/historia' ? 'bg-[#0047BB] text-white shadow-md' : 'text-gray-300 hover:bg-white/5'
+            }`}
+            href="/historia"
+          >
+            <span className="material-symbols-outlined">menu_book</span>
+            <span>História e Legado</span>
+          </Link>
+          <Link
+            className={`px-4 py-3 rounded-2xl flex items-center gap-3 transition-all ${
               pathname === '/minha-equipe' ? 'bg-[#0047BB] text-white shadow-md' : 'text-gray-300 hover:bg-white/5'
             }`}
             href="/minha-equipe"
           >
             <span className="material-symbols-outlined">group</span>
             <span>Minha Equipe</span>
+          </Link>
+          <Link
+            className={`px-4 py-3 rounded-2xl flex items-center gap-3 transition-all ${
+              pathname === '/placar' ? 'bg-[#0047BB] text-white shadow-md' : 'text-gray-300 hover:bg-white/5'
+            }`}
+            href="/placar"
+          >
+            <span className="material-symbols-outlined">social_leaderboard</span>
+            <span>Placar</span>
           </Link>
           <Link
             className={`px-4 py-3 rounded-2xl flex items-center gap-3 transition-all ${
@@ -118,6 +131,15 @@ export default function ApoiadorLayout({
           </Link>
           <Link
             className={`px-4 py-3 rounded-2xl flex items-center gap-3 transition-all ${
+              pathname === '/conquistas' ? 'bg-[#ffc800] text-[#040d21] font-black shadow-md' : 'text-gray-300 hover:bg-white/5'
+            }`}
+            href="/conquistas"
+          >
+            <span className="material-symbols-outlined">emoji_events</span>
+            <span>Conquistas</span>
+          </Link>
+          <Link
+            className={`px-4 py-3 rounded-2xl flex items-center gap-3 transition-all ${
               pathname === '/minha-colinha' ? 'bg-[#ffc800] text-[#040d21] font-black shadow-md' : 'text-gray-300 hover:bg-white/5'
             }`}
             href="/minha-colinha"
@@ -126,20 +148,18 @@ export default function ApoiadorLayout({
             <span>Minha Colinha</span>
           </Link>
           
-          {isMaster && (
-            <Link
-              className="text-[#ffc800] px-4 py-3 flex items-center gap-3 hover:bg-[#ffc800]/10 transition-colors rounded-2xl border border-[#ffc800]/20 mt-4 font-black"
-              href="/admin"
-            >
-              <span className="material-symbols-outlined">admin_panel_settings</span>
-              <span>Painel Master</span>
-            </Link>
-          )}
+          <button 
+            onClick={() => { localStorage.removeItem('whatsapp_validado'); window.location.href = '/validar-whatsapp'; }}
+            className="mt-8 px-4 py-3 rounded-2xl flex items-center gap-3 transition-all text-red-400 hover:bg-red-500/10 hover:text-red-300 text-left"
+          >
+            <span className="material-symbols-outlined">logout</span>
+            <span>Sair da Conta</span>
+          </button>
         </div>
       </nav>
 
       {/* Main Content */}
-      <div className="flex-1 md:ml-72 min-h-screen bg-background overflow-x-hidden">
+      <div className="flex-1 md:ml-72 min-h-screen animate-bg-gradient overflow-x-hidden text-white">
         {children}
       </div>
 

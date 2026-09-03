@@ -17,7 +17,8 @@ model Tenant {
   primaryColor    String      @default("#ffe4af")
   surfaceColor    String      @default("#111415")
   logoUrl         String?
-  radioStreamUrl  String?
+  jingleUrl       String?
+  videoCampaignUrl String?
   whatsappUrl     String?
   tseSyncUrl      String?
   tseApiKey       String?
@@ -34,6 +35,8 @@ model Tenant {
   proposals       Proposal[]
   colinhas        Colinha[]
   webhooks        WebhookLog[]
+  badges          Badge[]
+  smsLogs         SmsLog[]
 
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -71,6 +74,7 @@ model Supporter {
 
   colinha          Colinha?
   missionProgress  MissionSubmission[]
+  badges           SupporterBadge[]
   
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
@@ -105,6 +109,7 @@ model Mission {
   category         String            
   actionUrl        String?
   isActive         Boolean           @default(true)
+  requiresApproval Boolean           @default(false)
   
   submissions      MissionSubmission[]
   createdAt        DateTime          @default(now())
@@ -153,3 +158,46 @@ model OtpSession {
   attempts         Int               @default(0)
   createdAt        DateTime          @default(now())
 }
+
+model AdminUser {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  pinHash      String
+  createdAt    DateTime @default(now())
+}
+
+model Badge {
+  id           String             @id @default(uuid())
+  tenantId     String
+  tenant       Tenant             @relation(fields: [tenantId], references: [id])
+  name         String
+  description  String
+  imageUrl     String
+  pointsReq    Int                @default(0) // Se for ganho por pontos
+  createdAt    DateTime           @default(now())
+  supporters   SupporterBadge[]
+}
+
+model SupporterBadge {
+  id           String     @id @default(uuid())
+  supporterId  String
+  supporter    Supporter  @relation(fields: [supporterId], references: [id])
+  badgeId      String
+  badge        Badge      @relation(fields: [badgeId], references: [id])
+  earnedAt     DateTime   @default(now())
+
+  @@unique([supporterId, badgeId])
+}
+
+model SmsLog {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  provider     String   // 'TWILIO' or 'COMTELE'
+  toNumber     String
+  message      String
+  status       String   // 'SENT', 'DELIVERED', 'FAILED'
+  externalId   String?  // ID from Twilio/Comtele
+  createdAt    DateTime @default(now())
+}
+

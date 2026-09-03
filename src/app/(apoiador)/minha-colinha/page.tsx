@@ -30,13 +30,13 @@ const CANDIDATES_DB: Record<string, Candidate> = {
 
 export default function MinhaColinhaPage() {
   const [uf, setUf] = useState('DF');
-  const [gov, setGov] = useState('11');
-  const [depFederal, setDepFederal] = useState('2222');
+  const [gov, setGov] = useState('');
+  const [depFederal, setDepFederal] = useState('');
   // André Kubitschek (22022) travado/fixo
   const [depDistrital, setDepDistrital] = useState('22022');
-  const [senador1, setSenador1] = useState('222');
-  const [senador2, setSenador2] = useState('222');
-  const [presidente, setPresidente] = useState('22');
+  const [senador1, setSenador1] = useState('');
+  const [senador2, setSenador2] = useState('');
+  const [presidente, setPresidente] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(true);
 
   // Som da Urna (Simulado)
@@ -89,8 +89,8 @@ export default function MinhaColinhaPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans pb-32 pt-6 px-4 max-w-xl mx-auto">
-      
+    <div className="pb-28 pt-8 px-6 max-w-5xl mx-auto w-full flex flex-col items-center gap-6">
+      <div className="w-full max-w-xl bg-gray-50 rounded-[32px] p-6 shadow-2xl text-gray-900 font-sans">
       {/* Top Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -279,7 +279,7 @@ export default function MinhaColinhaPage() {
       </div>
 
       {/* Botões Inferiores Fixos / Ação */}
-      <div className="fixed bottom-16 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-gray-200 z-30 max-w-xl mx-auto flex gap-4">
+      <div className="mt-8 flex flex-col sm:flex-row gap-4">
         <button 
           onClick={() => alert('Colinha salva com sucesso no seu dispositivo!')}
           className="flex-1 bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-300 font-bold py-3.5 rounded-2xl shadow-sm transition-all"
@@ -304,6 +304,7 @@ export default function MinhaColinhaPage() {
         </button>
       </div>
 
+      </div>
     </div>
   );
 }

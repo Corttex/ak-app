@@ -4,6 +4,7 @@ import Link from 'next/link';
 
 export default function MolduraPage() {
   const [photo, setPhoto] = useState<string | null>(null);
+  const [selectedMoldura, setSelectedMoldura] = useState<string>('/molduras/Bottom AK-01.png');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -16,10 +17,35 @@ export default function MolduraPage() {
 
   const handleDownload = () => {
     if (!photo) return;
-    const link = document.createElement('a');
-    link.download = 'minha-moldura-22022.png';
-    link.href = photo; // placeholder for real canvas logic
-    link.click();
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = 1080;
+    canvas.height = 1080;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const userImg = new Image();
+    userImg.crossOrigin = 'anonymous';
+    userImg.onload = () => {
+      // Cover crop user image
+      const size = Math.min(userImg.width, userImg.height);
+      const x = (userImg.width - size) / 2;
+      const y = (userImg.height - size) / 2;
+      ctx.drawImage(userImg, x, y, size, size, 0, 0, 1080, 1080);
+      
+      const overlayImg = new Image();
+      overlayImg.crossOrigin = 'anonymous';
+      overlayImg.onload = () => {
+        ctx.drawImage(overlayImg, 0, 0, 1080, 1080);
+        
+        const link = document.createElement('a');
+        link.download = 'minha-moldura-ak22022.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      };
+      overlayImg.src = selectedMoldura;
+    };
+    userImg.src = photo;
   };
 
   return (
@@ -44,50 +70,44 @@ export default function MolduraPage() {
             </p>
           </div>
 
+          {/* Moldura Selection */}
+          <div className="w-full">
+            <h3 className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wider text-center">Escolha a Moldura</h3>
+            <div className="flex gap-3 overflow-x-auto pb-4 px-2 no-scrollbar">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => {
+                const molduraPath = `/molduras/Bottom AK-0${num}.png`;
+                return (
+                  <button
+                    key={num}
+                    onClick={() => setSelectedMoldura(molduraPath)}
+                    className={`relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all ${selectedMoldura === molduraPath ? 'border-primary scale-110 shadow-lg z-10' : 'border-gray-200 opacity-70 hover:opacity-100'}`}
+                  >
+                    <img src={molduraPath} alt={`Opção ${num}`} className="w-full h-full object-cover bg-gray-100" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* MOLDURA CONTAINER (The specific blue/yellow layout) */}
-          <div className="relative w-full aspect-square bg-[#0047BB] overflow-hidden rounded-xl shadow-2xl shadow-primary/30">
+          <div className="relative w-full aspect-square bg-[#0047BB] overflow-hidden rounded-xl shadow-2xl shadow-primary/30" id="moldura-canvas">
             
-            {/* The User Photo Circle */}
-            <div className="absolute top-[-5%] left-[-5%] w-[110%] h-[105%]">
-              <div className="w-full h-full bg-white rounded-full overflow-hidden border-[16px] border-[#FFC800] relative shadow-inner">
-                {photo ? (
-                  <img src={photo} alt="Sua Foto" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-surface-dim gap-4 cursor-pointer hover:bg-surface-high transition-colors" onClick={() => fileInputRef.current?.click()}>
-                    <div className="w-20 h-20 bg-primary-container rounded-full flex items-center justify-center text-primary shadow-sm">
-                      <span className="material-symbols-outlined text-4xl">add_a_photo</span>
-                    </div>
-                    <span className="text-primary font-bold text-lg font-headline">Toque para adicionar foto</span>
+            {/* The User Photo (Fills the back) */}
+            <div className="absolute inset-0">
+              {photo ? (
+                <img src={photo} alt="Sua Foto" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200 gap-4 cursor-pointer hover:bg-gray-300 transition-colors" onClick={() => fileInputRef.current?.click()}>
+                  <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center text-primary shadow-sm">
+                    <span className="material-symbols-outlined text-4xl">add_a_photo</span>
                   </div>
-                )}
-              </div>
+                  <span className="text-primary font-bold text-lg font-headline">Toque para adicionar foto</span>
+                </div>
+              )}
             </div>
 
-            {/* Candidate Cutout Photo (Bottom Right) */}
-            <div className="absolute bottom-0 right-[-5%] w-[45%] h-auto z-10 drop-shadow-2xl">
-              <img 
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCv66Xh_L9K0xR3aPjPnbZt-wS-rQ6h3z3E6K0E0x3K_3_b-J-P_M_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0" 
-                alt="André Kubitschek" 
-                className="w-full h-full object-contain filter drop-shadow-[0_10px_15px_rgba(0,0,0,0.5)]"
-                onError={(e) => {
-                  // Fallback silhouette if image fails
-                  e.currentTarget.src = "https://ui-avatars.com/api/?name=Andre+K&background=0047BB&color=fff&size=512";
-                }}
-              />
-            </div>
-
-            {/* Name Tag (André Kubitschek) */}
-            <div className="absolute bottom-[18%] left-6 bg-[#FFC800] text-[#0047BB] font-headline font-black rounded-t-2xl rounded-bl-2xl rounded-br-md px-6 pt-3 pb-8 z-20 leading-[1.1] shadow-lg">
-              <span className="text-2xl tracking-tight block">André</span>
-              <span className="text-2xl tracking-tight block">Kubitschek</span>
-            </div>
-
-            {/* Number Tag (22022) */}
-            <div className="absolute bottom-4 left-4 bg-[#F2F1ED] rounded-full pl-6 pr-10 py-0 z-30 shadow-2xl flex items-center justify-center">
-              <span className="text-[#0053D6] font-display font-black text-[4.5rem] italic tracking-tighter leading-none" style={{ transform: 'scaleX(1.1)' }}>
-                22022
-              </span>
-            </div>
+            {/* PNG Overlay */}
+            <img src={selectedMoldura} alt="Moldura Overlay" className="absolute inset-0 w-full h-full object-cover pointer-events-none z-20" />
             
             {/* Hidden Input */}
             <input 

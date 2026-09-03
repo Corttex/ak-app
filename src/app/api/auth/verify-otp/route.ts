@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
 
 export async function POST(req: NextRequest) {
@@ -11,10 +12,7 @@ export async function POST(req: NextRequest) {
 
     const sanitizedPhone = phone.replace(/\D/g, '');
 
-    // Master Bypass
-    if (sanitizedPhone === '61994344843' && code === '123456') {
-      return NextResponse.json({ success: true, message: 'Autenticado via Master' });
-    }
+    // Code validation is handled below
 
     const session = await prisma.otpSession.findUnique({
       where: { phone: sanitizedPhone }
@@ -39,14 +37,27 @@ export async function POST(req: NextRequest) {
     // Sucesso: Deletar sessão
     await prisma.otpSession.delete({ where: { id: session.id } });
 
-    // Atualizar Usuário se existir
-    const user = await prisma.supporter.findUnique({ where: { phone: sanitizedPhone } });
-    if (user) {
-      await prisma.supporter.update({
-        where: { id: user.id },
-        data: { whatsappVerified: true }
-      });
-    }
+    // Atualizar ou Criar Usuário
+    const user = await prisma.supporter.upsert({
+      where: { phone: sanitizedPhone },
+      update: { whatsappVerified: true },
+      create: {
+        tenantId: 'default-tenant-id',
+        phone: sanitizedPhone,
+        cpf: '00000000000',
+        fullName: 'Apoiador Convidado',
+        whatsappVerified: true,
+        inviteSlug: `apoiador-${sanitizedPhone.slice(-4)}-${Math.floor(1000 + Math.random() * 9000)}`
+      }
+    });
+
+    const cookieStore = await cookies();
+    cookieStore.set('supporter_token', user.id, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      httpOnly: false,
+      sameSite: 'lax'
+    });
 
     return NextResponse.json({ success: true, message: 'Autenticado com sucesso' });
 

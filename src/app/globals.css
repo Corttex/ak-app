@@ -72,3 +72,15 @@ body {
   border: 1px solid rgba(0, 83, 214, 0.1);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
+
+@keyframes gradient-bg {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-bg-gradient {
+  background: linear-gradient(-45deg, #020617, #040d21, #001f54, #001233);
+  background-size: 400% 400%;
+  animation: gradient-bg 15s ease infinite;
+}

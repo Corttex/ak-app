@@ -52,15 +52,6 @@ export default function ValidarWhatsappPage() {
 
       setIsLoading(false);
 
-      // Acesso Master instantâneo ou sucesso em dev
-      if (digits === '61994344843') {
-        localStorage.setItem('master_access', 'true');
-        localStorage.setItem('whatsapp_validado', 'true');
-        localStorage.setItem('user_phone', digits);
-        router.push('/admin');
-        return;
-      }
-
       if (!res.ok || data.notFound) {
         setNotFoundError(true);
         return;
@@ -108,13 +99,15 @@ export default function ValidarWhatsappPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#040d21] flex flex-col items-center justify-center p-4 font-sans relative overflow-hidden">
+    <div className="min-h-screen animate-bg-gradient flex flex-col items-center justify-center p-4 font-sans relative overflow-hidden">
       
-      {/* Ícone Superior de Leão / Patinha em Dourado */}
-      <div className="w-16 h-16 rounded-full border-2 border-[#ffc800] bg-[#040d21] flex items-center justify-center text-[#ffc800] mb-8 shadow-[0_0_15px_rgba(255,200,0,0.3)] z-10">
-        <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-          pets
-        </span>
+      {/* Logo Superior AK */}
+      <div className="w-32 md:w-40 mb-10 z-10 relative">
+        <img 
+          src="/Logo AK (1).svg" 
+          alt="Logo AK 22022" 
+          className="w-full h-auto brightness-0 invert"
+        />
       </div>
 
       {/* Card de Login Estilo Referência Leoa */}
@@ -148,7 +141,7 @@ export default function ValidarWhatsappPage() {
             {notFoundError && (
               <div className="w-full text-left text-[#d32f2f] text-sm font-semibold mb-5 leading-relaxed bg-red-50 p-4 rounded-2xl border border-red-100">
                 <p className="mb-3">
-                  Não encontramos esse número. Se você foi convidado, abra o link de convite que enviaram para você. Se ainda não tem cadastro, peça o link para quem te chamou. 🦁
+                  Não encontramos esse número. Se você foi convidado, abra o link de convite que enviaram para você. Se ainda não tem cadastro, peça o link para quem te chamou. 🚀
                 </p>
                 <p className="text-gray-600 font-medium text-xs">
                   Precisa de ajuda? Fale com a gente:<br />
