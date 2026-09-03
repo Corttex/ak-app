@@ -1,0 +1,155 @@
+datasource db {
+  provider = "sqlite"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Tenant {
+  id              String      @id @default(uuid())
+  slug            String      @unique
+  name            String
+  candidateName   String
+  ballotNumber    String      // Ex: "77"
+  officeSought    String      // Ex: "Governadora"
+  viceName        String?     // Ex: "Gustavo Rocha"
+  primaryColor    String      @default("#ffe4af")
+  surfaceColor    String      @default("#111415")
+  logoUrl         String?
+  radioStreamUrl  String?
+  whatsappUrl     String?
+  tseSyncUrl      String?
+  tseApiKey       String?
+  googleClientId  String?
+  googleClientSecret String?
+  
+  // Feature Toggles
+  pointsVisible       Boolean @default(true)
+  leaderboardVisible  Boolean @default(false)
+  allowAccountDelete  Boolean @default(true)
+
+  supporters      Supporter[]
+  missions        Mission[]
+  proposals       Proposal[]
+  colinhas        Colinha[]
+  webhooks        WebhookLog[]
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model Supporter {
+  id               String          @id @default(uuid())
+  tenantId         String
+  tenant           Tenant          @relation(fields: [tenantId], references: [id])
+  
+  // Dados Pessoais
+  fullName         String
+  cpf              String          @unique
+  phone            String          @unique
+  email            String?
+  instagram        String?
+  city             String?
+  state            String?         
+  avatarUrl        String?
+  passwordHash     String?
+  
+  // Gamificação & Rede
+  role             String          @default("SUPPORTER") 
+  tier             String          @default("LEAO_BEBE")
+  totalPoints      Int             @default(0)
+  inviteSlug       String          @unique 
+  referredById     String?
+  referredBy       Supporter?      @relation("SupporterTree", fields: [referredById], references: [id])
+  referrals        Supporter[]     @relation("SupporterTree")
+  
+  // Configurações de Privacidade
+  phoneVerified    Boolean         @default(false)
+  whatsappVerified Boolean         @default(false)
+  showInLeaderboard Boolean        @default(true)
+
+  colinha          Colinha?
+  missionProgress  MissionSubmission[]
+  
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([tenantId, totalPoints(sort: Desc)])
+}
+
+model Colinha {
+  id                  String     @id @default(uuid())
+  supporterId         String     @unique
+  supporter           Supporter  @relation(fields: [supporterId], references: [id], onDelete: Cascade)
+  tenantId            String
+  tenant              Tenant     @relation(fields: [tenantId], references: [id])
+  
+  deputadoFederal     String?    
+  deputadoEstadual    String?    
+  senador1            String?    
+  senador2            String?    
+  governador          String?    
+  presidente          String?    
+
+  updatedAt           DateTime   @updatedAt
+}
+
+model Mission {
+  id               String            @id @default(uuid())
+  tenantId         String
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  title            String
+  description      String
+  pointsReward     Int
+  category         String            
+  actionUrl        String?
+  isActive         Boolean           @default(true)
+  
+  submissions      MissionSubmission[]
+  createdAt        DateTime          @default(now())
+}
+
+model MissionSubmission {
+  id               String            @id @default(uuid())
+  missionId        String
+  mission          Mission           @relation(fields: [missionId], references: [id])
+  supporterId      String
+  supporter        Supporter         @relation(fields: [supporterId], references: [id])
+  status           String            @default("COMPLETED") // PENDING, COMPLETED, REJECTED
+  proofUrl         String?
+  completedAt      DateTime          @default(now())
+
+  @@unique([missionId, supporterId])
+}
+
+model Proposal {
+  id               String            @id @default(uuid())
+  tenantId         String
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  title            String            
+  description      String            
+  icon             String            @default("campaign")
+  order            Int               @default(0)
+}
+
+model WebhookLog {
+  id               String            @id @default(uuid())
+  tenantId         String
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  endpoint         String
+  eventType        String
+  status           Int               
+  payload          String            // JSON string for SQLite
+  response         String?           // JSON string for SQLite
+  createdAt        DateTime          @default(now())
+}
+
+model OtpSession {
+  id               String            @id @default(uuid())
+  phone            String            @unique
+  code             String
+  expiresAt        DateTime
+  attempts         Int               @default(0)
+  createdAt        DateTime          @default(now())
+}
