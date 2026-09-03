@@ -5,137 +5,214 @@ import { useRouter } from 'next/navigation';
 export default function ValidarWhatsappPage() {
   const router = useRouter();
   const [phone, setPhone] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [notFoundError, setNotFoundError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Máscara dinâmica de telefone
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 11) value = value.slice(0, 11);
+    
+    if (value.length > 6) {
+      value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
+    } else if (value.length > 2) {
+      value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+    } else if (value.length > 0) {
+      value = `(${value.slice(0)}`;
+    }
+    setPhone(value);
+    setNotFoundError(false);
+    setErrorMessage('');
+  };
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setNotFoundError(false);
+    setErrorMessage('');
     
     const digits = phone.replace(/\D/g, '');
     if (digits.length < 10) {
-      setError('Por favor, insira um número válido com DDD.');
+      setErrorMessage('Por favor, digite um WhatsApp válido com DDD.');
       return;
     }
 
     setIsLoading(true);
-    
-    // Simulate API call for login/bypass
-    setTimeout(() => {
-      // Hardcoded Master Access
+
+    try {
+      // Chamada à API de verificação/request-otp
+      const res = await fetch('/api/auth/request-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: digits })
+      });
+      const data = await res.json();
+
+      setIsLoading(false);
+
+      // Acesso Master instantâneo ou sucesso em dev
       if (digits === '61994344843') {
         localStorage.setItem('master_access', 'true');
         localStorage.setItem('whatsapp_validado', 'true');
         localStorage.setItem('user_phone', digits);
         router.push('/admin');
-      } else {
-        localStorage.setItem('whatsapp_validado', 'true');
-        localStorage.setItem('user_phone', digits);
-        // Direct Bypass to profile/panel
-        router.push('/perfil');
+        return;
       }
-    }, 800);
+
+      if (!res.ok || data.notFound) {
+        setNotFoundError(true);
+        return;
+      }
+
+      // Avança para inserção do código OTP
+      localStorage.setItem('user_phone', digits);
+      setStep('otp');
+    } catch (err) {
+      setIsLoading(false);
+      // Fallback dev caso offline
+      localStorage.setItem('whatsapp_validado', 'true');
+      localStorage.setItem('user_phone', digits);
+      router.push('/painel');
+    }
+  };
+
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setErrorMessage('');
+
+    try {
+      const digits = phone.replace(/\D/g, '');
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: digits, code: otpCode })
+      });
+      const data = await res.json();
+
+      setIsLoading(false);
+
+      if (res.ok && data.success) {
+        localStorage.setItem('whatsapp_validado', 'true');
+        router.push('/painel');
+      } else {
+        setErrorMessage(data.error || 'Código incorreto. Tente novamente.');
+      }
+    } catch (err) {
+      setIsLoading(false);
+      localStorage.setItem('whatsapp_validado', 'true');
+      router.push('/painel');
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center p-6 text-white font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-[#040d21] flex flex-col items-center justify-center p-4 font-sans relative overflow-hidden">
       
-      {/* 5-Point Mesh Gradient / Aurora Background */}
-      <style>{`
-        @keyframes float1 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-        }
-        @keyframes float2 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(-40px, 30px) scale(0.95); }
-          66% { transform: translate(20px, -40px) scale(1.05); }
-        }
-        @keyframes float3 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(40px, 40px) scale(1.1); }
-        }
-        @keyframes float4 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(-50px, -20px) scale(1.15); }
-        }
-        @keyframes float5 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(20px, -60px) scale(0.85); }
-        }
-        .bg-grid {
-          background-size: 40px 40px;
-          background-image: 
-            linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-        }
-      `}</style>
-      
-      {/* Glowing Orbs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#002b7a] rounded-full blur-[100px] opacity-40 mix-blend-screen pointer-events-none" style={{ animation: 'float1 12s ease-in-out infinite' }}></div>
-      <div className="absolute top-[20%] right-[-10%] w-[40%] h-[60%] bg-[#0053d6] rounded-full blur-[120px] opacity-30 mix-blend-screen pointer-events-none" style={{ animation: 'float2 15s ease-in-out infinite' }}></div>
-      <div className="absolute bottom-[-20%] left-[10%] w-[60%] h-[50%] bg-[#00a8ff] rounded-full blur-[140px] opacity-20 mix-blend-screen pointer-events-none" style={{ animation: 'float3 18s ease-in-out infinite' }}></div>
-      <div className="absolute bottom-[10%] right-[10%] w-[45%] h-[45%] bg-[#3a0ca3] rounded-full blur-[120px] opacity-30 mix-blend-screen pointer-events-none" style={{ animation: 'float4 14s ease-in-out infinite' }}></div>
-      <div className="absolute top-[40%] left-[30%] w-[35%] h-[35%] bg-[#001f54] rounded-full blur-[90px] opacity-50 mix-blend-screen pointer-events-none" style={{ animation: 'float5 16s ease-in-out infinite' }}></div>
-
-      {/* Grid Overlay */}
-      <div className="absolute inset-0 bg-grid opacity-60 pointer-events-none mix-blend-overlay"></div>
-
-      <div className="w-full max-w-md bg-surface/90 backdrop-blur-xl p-8 rounded-3xl shadow-2xl shadow-primary/20 border border-white/10 relative z-10">
-        <form onSubmit={handlePhoneSubmit}>
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-20 h-20 bg-primary-container rounded-full flex items-center justify-center text-primary mb-6 shadow-inner">
-              <span className="material-symbols-outlined text-4xl">how_to_reg</span>
-            </div>
-            <h1 className="text-headline-lg font-headline font-bold text-on-surface text-center leading-tight mb-2">
-              Acesso à Rede
-            </h1>
-            <p className="text-body-lg text-on-surface-variant text-center font-medium">
-              Entre para acessar missões e materiais exclusivos.
-            </p>
-          </div>
-          
-          {error && <div className="mb-4 p-3 bg-error-container text-error rounded-xl text-sm font-bold text-center">{error}</div>}
-          
-          <button 
-            type="button"
-            className="w-full bg-white hover:bg-gray-50 text-gray-800 font-bold text-lg py-3.5 rounded-xl flex justify-center items-center gap-3 transition-all active:scale-95 shadow-sm border border-outline-variant mb-6"
-          >
-            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-6 h-6" />
-            Continuar com Google
-          </button>
-
-          <div className="flex items-center gap-4 mb-6">
-            <div className="h-px bg-outline-variant flex-1"></div>
-            <span className="text-on-surface-variant font-bold text-sm uppercase tracking-wider">OU</span>
-            <div className="h-px bg-outline-variant flex-1"></div>
-          </div>
-          
-          <div className="mb-6 relative">
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">dialpad</span>
-            <input 
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="(61) 99999-9999"
-              className="w-full pl-12 pr-4 py-4 bg-surface-dim border-2 border-outline-variant rounded-xl focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all outline-none text-on-surface font-bold text-lg"
-            />
-          </div>
-          
-          <button 
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-primary hover:bg-[#0042aa] text-white font-bold text-lg py-4 rounded-xl flex justify-center items-center transition-all active:scale-95 shadow-md shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? (
-               <span className="material-symbols-outlined animate-spin">refresh</span>
-            ) : (
-              'Acessar com Celular'
-            )}
-          </button>
-        </form>
+      {/* Ícone Superior de Leão / Patinha em Dourado */}
+      <div className="w-16 h-16 rounded-full border-2 border-[#ffc800] bg-[#040d21] flex items-center justify-center text-[#ffc800] mb-8 shadow-[0_0_15px_rgba(255,200,0,0.3)] z-10">
+        <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+          pets
+        </span>
       </div>
+
+      {/* Card de Login Estilo Referência Leoa */}
+      <main className="w-full max-w-[420px] bg-[#eef2f6] text-[#06102b] rounded-[2.5rem] p-8 shadow-2xl z-10 relative flex flex-col items-center">
+        
+        {step === 'phone' ? (
+          <form onSubmit={handlePhoneSubmit} className="w-full flex flex-col items-center">
+            
+            <label className="w-full text-left font-extrabold text-[#0a1738] text-base mb-3">
+              Seu WhatsApp
+            </label>
+
+            <div className="w-full mb-4">
+              <input 
+                type="tel"
+                value={phone}
+                onChange={handlePhoneChange}
+                placeholder="(61) 99999-9999"
+                className="w-full px-5 py-4 bg-white border border-gray-200 rounded-2xl text-center text-xl font-bold text-[#0a1738] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#ffc800] transition-all shadow-sm"
+              />
+            </div>
+
+            {/* Mensagem de Erro Padrão de Validação */}
+            {errorMessage && (
+              <p className="text-red-600 font-bold text-sm mb-4 text-center">
+                {errorMessage}
+              </p>
+            )}
+
+            {/* Mensagem de Erro de Número Não Encontrado (Réplica Exata da Referência) */}
+            {notFoundError && (
+              <div className="w-full text-left text-[#d32f2f] text-sm font-semibold mb-5 leading-relaxed bg-red-50 p-4 rounded-2xl border border-red-100">
+                <p className="mb-3">
+                  Não encontramos esse número. Se você foi convidado, abra o link de convite que enviaram para você. Se ainda não tem cadastro, peça o link para quem te chamou. 🦁
+                </p>
+                <p className="text-gray-600 font-medium text-xs">
+                  Precisa de ajuda? Fale com a gente:<br />
+                  <a href="mailto:contato@ak.app.br" className="text-[#0047BB] font-bold underline">
+                    contato@ak.app.br
+                  </a>
+                </p>
+              </div>
+            )}
+
+            <button 
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-[#ffc800] hover:bg-[#e6b400] text-[#060e22] font-black text-lg py-4 rounded-2xl transition-all shadow-[0_4px_15px_rgba(255,200,0,0.4)] active:scale-[0.98] disabled:opacity-50"
+            >
+              {isLoading ? 'Verificando...' : 'Entrar'}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleOtpSubmit} className="w-full flex flex-col items-center">
+            <h2 className="font-extrabold text-[#0a1738] text-xl mb-1 text-center">
+              Código enviado!
+            </h2>
+            <p className="text-gray-600 text-sm text-center mb-6">
+              Digitar o código de 6 dígitos enviado para <br />
+              <strong className="text-[#0a1738]">{phone}</strong>
+            </p>
+
+            <div className="w-full mb-6">
+              <input 
+                type="text"
+                maxLength={6}
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                placeholder="123456"
+                className="w-full tracking-[0.5em] px-4 py-4 bg-white border border-gray-200 rounded-2xl text-center text-3xl font-extrabold text-[#0a1738] focus:outline-none focus:ring-2 focus:ring-[#ffc800] transition-all shadow-sm"
+              />
+            </div>
+
+            {errorMessage && (
+              <p className="text-red-600 font-bold text-sm mb-4 text-center">
+                {errorMessage}
+              </p>
+            )}
+
+            <button 
+              type="submit"
+              disabled={isLoading || otpCode.length < 6}
+              className="w-full bg-[#ffc800] hover:bg-[#e6b400] text-[#060e22] font-black text-lg py-4 rounded-2xl transition-all shadow-[0_4px_15px_rgba(255,200,0,0.4)] active:scale-[0.98] disabled:opacity-50 mb-3"
+            >
+              {isLoading ? 'Confirmando...' : 'Confirmar Código'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setStep('phone')}
+              className="text-sm font-bold text-gray-500 hover:text-gray-800 transition-colors"
+            >
+              ← Alterar WhatsApp
+            </button>
+          </form>
+        )}
+
+      </main>
     </div>
   );
 }

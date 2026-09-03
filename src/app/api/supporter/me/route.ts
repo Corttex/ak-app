@@ -1,66 +1,71 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 
-const prisma = new PrismaClient();
+export const dynamic = 'force-dynamic';
 
 // BUSCAR DADOS DO APOIADOR (GET)
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const phone = searchParams.get('phone');
-    
-    if (!phone) {
-      return NextResponse.json({ error: 'Telefone não fornecido' }, { status: 400 });
-    }
-
-    const user = await prisma.supporter.findUnique({
-      where: { phone: phone }
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
-    }
-
-    return NextResponse.json({ user }, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
-}
-
-// ATUALIZAR DADOS DO APOIADOR (POST)
-export async function POST(req: Request) {
-  try {
-    const { phone, nome, email, instagram, cidade, showInLeaderboard } = await req.json();
 
     if (!phone) {
-      return NextResponse.json({ error: 'Telefone obrigatório para update' }, { status: 400 });
+      return NextResponse.json({ error: 'Telefone não informado' }, { status: 400 });
     }
-    
-    const user = await prisma.supporter.upsert({
-      where: { phone: phone },
-      update: {
-        fullName: nome || "Sem Nome",
-        email: email || null,
-        instagram: instagram || null,
-        city: cidade || null,
-        showInLeaderboard: showInLeaderboard !== undefined ? showInLeaderboard : true
-      },
-      create: {
-        tenantId: "default-tenant-id", // mock default
-        fullName: nome || "Sem Nome",
-        cpf: `MOCK-PROFILE-${Date.now()}`,
-        phone: phone,
-        email: email || null,
-        instagram: instagram || null,
-        city: cidade || null,
-        showInLeaderboard: showInLeaderboard !== undefined ? showInLeaderboard : true,
-        inviteSlug: `${(nome || 'user').toLowerCase().replace(/\s+/g, '-')}-${Math.floor(Math.random() * 10000)}`,
+
+    const supporter = await prisma.supporter.findUnique({
+      where: { phone },
+      include: {
+        referrals: true
       }
     });
 
-    return NextResponse.json({ success: true, user }, { status: 200 });
+    if (!supporter) {
+      return NextResponse.json({ user: null });
+    }
 
+    return NextResponse.json({ user: supporter });
   } catch (error: any) {
-    return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Erro ao buscar dados do perfil', details: error.message }, { status: 500 });
+  }
+}
+
+// SALVAR/ATUALIZAR DADOS DO PERFIL (POST)
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { phone, nome, email, instagram, cidade, showInLeaderboard, cpf } = body;
+
+    if (!phone) {
+      return NextResponse.json({ error: 'Telefone é obrigatório' }, { status: 400 });
+    }
+
+    // Upsert do perfil
+    const updatedUser = await prisma.supporter.upsert({
+      where: { phone },
+      update: {
+        fullName: nome,
+        email,
+        instagram,
+        city: cidade,
+        showInLeaderboard
+      },
+      create: {
+        tenantId: 'default-tenant-id',
+        phone,
+        cpf: cpf || '00000000000',
+        fullName: nome || 'Apoiador',
+        email,
+        instagram,
+        city: cidade,
+        showInLeaderboard: showInLeaderboard ?? true,
+        inviteSlug: `${(nome || 'apoiador').toLowerCase().replace(/\s+/g, '-')}-${Math.floor(1000 + Math.random() * 9000)}`
+      }
+    });
+
+    return NextResponse.json({ success: true, user: updatedUser });
+  } catch (error: any) {
+    console.error('Erro ao salvar perfil:', error);
+    return NextResponse.json({ error: 'Erro interno ao salvar perfil' }, { status: 500 });
   }
 }

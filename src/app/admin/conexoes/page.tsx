@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Hub, CheckCircle, RefreshCw, Key, ShieldCheck, Activity, Send, AlertTriangle } from 'lucide-react';
+import { Network, CheckCircle, RefreshCw, Key, ShieldCheck, Activity, Send, AlertTriangle } from 'lucide-react';
 
 interface WebhookLog {
   id: string;

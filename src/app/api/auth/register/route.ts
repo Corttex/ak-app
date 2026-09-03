@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 export async function POST(req: Request) {
   try {
     const { fullName, cpf, phone, inviteSlug } = await req.json();
+
+    if (!phone) {
+      return NextResponse.json({ error: 'Telefone é obrigatório' }, { status: 400 });
+    }
+
+    const sanitizedPhone = phone.replace(/\D/g, '');
 
     // 1. Resolve referrer if an invite code was provided
     let referredById = null;
@@ -16,39 +20,27 @@ export async function POST(req: Request) {
       if (referrer) referredById = referrer.id;
     }
 
-    // 2. Save user locally
-    const newUser = await prisma.supporter.create({
-      data: {
-        tenantId: "default-tenant-id",
+    // 2. Save user locally (upsert to handle existing phone)
+    const newUser = await prisma.supporter.upsert({
+      where: { phone: sanitizedPhone },
+      update: {
         fullName,
         cpf,
-        phone,
-        inviteSlug: `${fullName.toLowerCase().replace(/\s+/g, '-')}-${Math.floor(Math.random() * 1000)}`,
+        referredById: referredById || undefined
+      },
+      create: {
+        tenantId: "default-tenant-id",
+        fullName: fullName || "Novo Apoiador",
+        cpf,
+        phone: sanitizedPhone,
+        inviteSlug: `${(fullName || 'apoiador').toLowerCase().replace(/\s+/g, '-')}-${Math.floor(1000 + Math.random() * 9000)}`,
         referredById
       }
     });
 
-    // 3. Sync Outbound with Elegis
-    // Replace with real Elegis API endpoint and Headers
-    /*
-    await fetch('https://api.elegis.com.br/v1/cadastros', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.ELEGIS_API_KEY}`
-      },
-      body: JSON.stringify({
-        nome: fullName,
-        cpf: cpf,
-        telefone: phone,
-        indicado_por: inviteSlug
-      })
-    });
-    */
-
     return NextResponse.json({ success: true, user: newUser }, { status: 201 });
   } catch (error: any) {
     console.error("Registration Error:", error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
   }
 }
