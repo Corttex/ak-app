@@ -130,8 +130,8 @@ export async function GET() {
             title: m.title,
             description: m.description,
             pointsReward: m.pointsReward,
-            badgeReward: m.badgeReward,
-            requiresProof: m.requiresProof
+            category: 'GERAL',
+            requiresApproval: m.requiresProof
           }
         });
         missions.push(newMission);
@@ -196,7 +196,7 @@ export async function POST(req: Request) {
     }
 
     // Auto-approve if no proof required
-    const status = mission.requiresProof ? 'PENDING' : 'APPROVED';
+    const status = mission.requiresApproval ? 'PENDING' : 'APPROVED';
 
     const submission = await prisma.missionSubmission.create({
       data: {
